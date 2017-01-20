@@ -2,7 +2,7 @@ URL do esquemático:
 http://schematics.com/project/projeto-protetor-47069/
 
 20/01/2017:
-- adicionado circuito necessário para medidor de corrente
-- adicionado relé
-- adicionado shield Display LCD 16x2
-- teste 
+- adicionado circuito necessário para medidor de corrente.
+- adicionado relé.
+- adicionado shield Display LCD 16x2.
+- adição de pinos de cada parte do projeto para o Arduino.
