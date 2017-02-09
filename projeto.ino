@@ -6,6 +6,29 @@
 #define botLeft   4
 #define botSelect 5
 
+//caractere seta cima
+byte cima[8] = {
+B00000,
+B00100,
+B01110,
+B10101,
+B00100,
+B00100,
+B00100,
+B00000
+};
+//caractere seta baixo
+byte baixo[8] = {
+B00000,
+B00100,
+B00100,
+B00100,
+B10101,
+B01110,
+B00100,
+B00000
+};
+
 //inicializar lcd e medidor
 EnergyMonitor medCorrente;
 LiquidCrystal lcd(43,41,39,37,35,33);
@@ -20,6 +43,8 @@ int botao = 8; //pino de leitura dos botoes
 void setup() {
   //inicialização do lcd
   lcd.begin(16, 2);
+  lcd.createChar(1, cima);
+  lcd.createChar(2, baixo);
 
   //Pino, calibracao - Cur Const= Ratio/BurdenR. 1800/62 = 29. 
   medCorrente.current(pinMedCorrente, 29);
@@ -33,19 +58,51 @@ void loop()
 { 
   //Calcula a corrente  
   double corrente = medCorrente.calcIrms(1480); //calculando a corrente atual
-  imprime(corrente, tempoRestante); //imprimindo as informacoes de tempo e corrente
-  if(leituraBotao(botao) == botSelect){
-      tempo = setTempo(botao,tempoRestante); //seta tempo
-      tempoInicio = millis();
-      tempoRestante = tempo*60;
-      digitalWrite(rele, LOW); //liga rele caso setado tempo
-  }
-
+  
   if(tempoRestante != 0){//subtraindo o tempo atual do restante - se acabou o tempo nao subtrai
      tempoRestante = tempo*60*1000 - (millis() - tempoInicio);
      Serial.println(tempoInicio);
      tempoRestante = floor(tempoRestante/1000.0);
   }
+  
+  //verificando a leitura do botao select - para entrada do menu de opcoes
+  if(leituraBotao(botao) == botSelect){
+      switch(menu(botao)){ // opcao setar tempo
+          case 0: tempo = setTempo(botao,tempoRestante); //seta tempo
+                  tempoInicio = millis();
+                  tempoRestante = tempo*60;
+                  digitalWrite(rele, LOW); //liga rele caso setado tempo
+                  break;
+          case 1: //para opção de setCorrente
+                  break;
+          case 2: break; //volta para tela inicial
+      }
+  }
+  
+  imprime(corrente, tempoRestante); //imprimindo as informacoes de tempo e corrente
+}
+
+int menu(int botao){
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Selecione a op.");
+    lcd.setCursor(0,1);
+    lcd.print("q deseja alterar");
+    delay(3000);    
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.write(1);
+    lcd.print(" p/ tempo");
+    lcd.setCursor(0,1);
+    lcd.write(2);
+    lcd.print(" p/ corrente");
+    while(1 == 1){
+        switch(leituraBotao(botao)){
+          case botUp:     return 0; break;
+          case botDown:   return 1; break;
+          case botSelect: return 2; break;
+        }
+    }                 
 }
 
 void imprime(float corrente, long tempo){
