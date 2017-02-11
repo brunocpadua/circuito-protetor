@@ -35,6 +35,7 @@ LiquidCrystal lcd(43,41,39,37,35,33);
 
 int pinMedCorrente = 11; //pino do medidor
 int rele = 53;  //pino do rele
+float correnteMax = 20.0;  //corrente maxima permitida no inicio
 long tempoRestante = 0; //variavel para armazenar o tempo restante ao original
 long tempoInicio; //guarda informação da millis() de quando o tempo foi setado
 long tempo; //tempo setado
@@ -64,6 +65,9 @@ void loop()
      Serial.println(tempoInicio);
      tempoRestante = floor(tempoRestante/1000.0);
   }
+
+  if (corrente > correnteMax || tempoRestante == 0) //verifica se a corrente lida eh maior que a maxima ou o tempo acabou
+    digitalWrite(rele, HIGH); //desliga o rele
   
   //verificando a leitura do botao select - para entrada do menu de opcoes
   if(leituraBotao(botao) == botSelect){
@@ -73,7 +77,8 @@ void loop()
                   tempoRestante = tempo*60;
                   digitalWrite(rele, LOW); //liga rele caso setado tempo
                   break;
-          case 1: //para opção de setCorrente
+          case 1: correnteMax = setcorrente(botao,correnteMax); //seta corrente
+                  digitalWrite(rele, LOW); //liga rele caso setado corrente (desliga no if acima caso nao tenha tempoRestante)
                   break;
           case 2: break; //volta para tela inicial
       }
@@ -142,6 +147,65 @@ void imprime(float corrente, long tempo){
       lcd.print("0");
       lcd.print(segundos);
   } 
+}
+
+float setcorrente(int botao, float correnteMax){
+  delay(500);
+  lcd.clear(); //limpa o lcd
+  float corrente = correnteMax; 
+  float incremento = 1; 
+  int cursorLCD = 1; //para a posicao do cursor do lcd - unidade e decimal
+  int cursorAux; //auxiliar para tratar erros com o cursos
+
+  while(leituraBotao(botao) != botSelect){
+      switch(leituraBotao(botao)){
+          case botLeft: { //botao da esquerda - muda o incremento para 1 (unidades)
+              incremento = 1;
+              cursorLCD = 1;
+              break;
+          }
+          case botRight: {
+              incremento = 0.1;
+              cursorLCD = 3;
+              break;
+          }
+          case botUp: {
+              corrente += incremento; //aumenta a corrente na unidade setada
+              if(corrente > 20){ //caso o valor ultrapasse o maximo
+                  corrente = 20;
+                  lcd.setCursor(0,1);
+                  lcd.print("Limite Excedido!!!");
+                  delay(1000);
+                  lcd.clear();
+              }   
+              break;
+          }
+          case botDown: {
+                corrente -= incremento; //diminui a corrente na unidade setada
+              if(corrente < 0){ //caso o valor ultrapasse o minimo
+                  corrente = 0;
+                  lcd.setCursor(0,1);
+                  lcd.print("Limite Excedido!!!");
+                  delay(1000);
+                  lcd.clear();
+              }   
+              break;
+          }
+      }
+      lcd.setCursor(0,0); //imprime no lcd a corrente maxima
+      lcd.print("Corr Max: ");
+      lcd.print(correnteMax);
+      lcd.setCursor(0,1); //imprime a corrente setada
+      lcd.print(corrente);
+      cursorAux = cursorLCD;
+      if(corrente < 10) //pode ter um erro no cursor caso o valor fique menor que 10
+          cursorAux--;
+      lcd.setCursor(cursorAux,1); //colocando o cursor na casa das unidades
+      lcd.cursor(); 
+      delay(200);
+  }
+  lcd.noCursor();
+  return corrente; //retorna a corrente lida
 }
 
 int setTempo(int botao, long tempo){
